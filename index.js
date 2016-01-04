@@ -33,7 +33,7 @@ var isUndefined = function (x) {
 app.set('trust proxy', 1);
 app.use(cookieParser());
 
-app.get('/', function (req, res) {
+app.use(function (req, res, next) {
     console.log(req.cookies);
     stats.requets = (stats.requests || 0) + 1;
     var player = req.cookies.player;
@@ -44,8 +44,10 @@ app.get('/', function (req, res) {
         console.log("Player defined as " + player);
     }
 
-    res.send('You are the player: ' + player);
+    next();
 });
+
+app.use(express.static(__dirname + '/public'));
 
 var server = app.listen(3000, function () {
     var host = server.address().address;
