@@ -5,15 +5,26 @@ var cookieParser = require('cookie-parser');
 var app = express();
 
 var stats = {};
-var players = [];
 
-var getRandomName = function () {
-    return "Player " + players.length;
+var CardGameStates = {
+    WaitingForPlayers : "WaitingForPlayers",
+    GameOver : "GameOver"
 };
 
-var playerExists = function (player) {
-    return players.indexOf(player) != -1;
+var CardGame = function () {
+    this.state = CardGameStates.WaitingForPlayers;
+    this.players = [];
 };
+
+CardGame.prototype.playerExists = function (player) {
+    return this.players.indexOf(player) != -1;
+};
+
+CardGame.prototype.getRandomName = function () {
+    return "Player " + this.players.length;
+};
+
+var game = new CardGame();
 
 var isUndefined = function (x) {
     return x == undefined;
@@ -26,9 +37,9 @@ app.get('/', function (req, res) {
     console.log(req.cookies);
     stats.requets = (stats.requests || 0) + 1;
     var player = req.cookies.player;
-    if (isUndefined(player) || !playerExists(player)) {
-        player = getRandomName();
-        players.push(player);
+    if (isUndefined(player) || !game.playerExists(player)) {
+        player = game.getRandomName();
+        game.players.push(player);
         res.cookie('player', player, {maxAge: 900000, httpOnly: true});
         console.log("Player defined as " + player);
     }
