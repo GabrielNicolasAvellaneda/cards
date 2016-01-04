@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/GabrielNicolasAvellaneda/cards#readme",
   "dependencies": {
+    "cookie-parser": "^1.4.0",
     "express": "^4.13.3"
   }
 }
