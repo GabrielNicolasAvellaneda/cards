@@ -1,0 +1,19 @@
+body {
+    background-color: #efefef;
+}
+
+#board {
+    height: 200px;
+}
+
+.card {
+    width: 80px;
+    height: 100px;
+    background: #ccc;
+    margin: 10px;
+    cursor: pointer;
+}
+
+li {
+    display: inline;
+}

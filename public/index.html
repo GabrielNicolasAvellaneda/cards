@@ -2,9 +2,29 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="freelancer.css">
+    <script src="javascripts/angular.min.js"></script>
+    <script src="javascripts/app.js"></script>
     <title></title>
 </head>
-<body>
-    Welcome to the Card Game
+<body ng-app="app" ng-controller="CardHandController">
+    <section id="board" class="success">
+        <div class="container">
+            <div class="row">
+                <ul>
+                   <li ng-repeat="c in onTable">{{c}}</li>
+                </ul>
+            </div>
+       </div>
+    </section>
+    <section id="hand">
+        <button type="button" ng-click="play()">Play!</button>
+        <button type="button" ng-click="pass()">Pass</button>
+        <ul>
+           <li ng-repeat="c in hand" class="card"><span ng-click="select(c)">{{c}}</span></li>
+        </ul>
+    </section>
 </body>
 </html>
