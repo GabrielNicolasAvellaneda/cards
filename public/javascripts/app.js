@@ -11,9 +11,14 @@ var app = angular.module('app', [])
 
     .controller('MainController', function ($scope, $http, $timeout) {
         $scope.hand = [1, 2, 1, 4, 5, 6, 7, 8, 8, 9].map(function (x) { return new Card(x); });
-        $scope.select = function (c) {
+        $scope.selectCard = function (c) {
             c.selected = !c.selected;
+            $scope.selectedCardsCount = $scope.hand.filter(function (c) { return c.selected; }).length;
         };
+
+        $scope.state = {};
+
+        $scope.selectedCardsCount = 0;
 
         $scope.onTable = [1, 2].map(function (x) { return new Card(x); });
 
@@ -38,11 +43,24 @@ var app = angular.module('app', [])
         };
 
     })
-        .filter('gamestate', function () {
+        .filter('gamestateFormat', function () {
            return function (input) {
-            if (input == 'WaitingForPlayers') {
-                return "Waiting for Players";
-            }
-            return "NO_TEXT";
-           };
-        });
+               // TODO: Expose common Game Server objects.
+                if (input.gameState == 'WaitingForPlayers') {
+                    return "Waiting for Players";
+                } else if (input.gameState == 'Playing') {
+                    return (input.currentPlayer == input.player)? "It's your turn!" : "Please wait for your opponent";
+                }
+                return input.gameState;
+               };
+        })
+        .filter('selectedFormat', function () {
+            return function (n) {
+                if (n == 0) {
+                    return "Nothing selected...";
+                }
+                return "Selected " + n + " card" + ((n > 0)? "s" : "");
+            };
+    });
+
+

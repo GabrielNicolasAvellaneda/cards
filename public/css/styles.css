@@ -6,12 +6,21 @@ body {
     height: 200px;
 }
 
+#controls {
+    text-align: center;
+}
+
 .card {
-    width: 80px;
-    height: 100px;
-    background: #ccc;
     margin: 10px;
     cursor: pointer;
+}
+
+.card img {
+    width: 80px;
+}
+
+#hand p {
+    text-align: center;
 }
 
 .message {

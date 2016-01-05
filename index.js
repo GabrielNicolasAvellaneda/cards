@@ -8,6 +8,7 @@ var stats = {};
 
 var CardGameStates = {
     WaitingForPlayers : "WaitingForPlayers",
+    Playing : "Playing",
     GameOver : "GameOver"
 };
 
@@ -30,6 +31,10 @@ CardGame.prototype.addPlayer = function (player) {
     }
 
     this.players.push(player);
+    if (this.players.length >= 2) {
+        this.state = CardGameStates.Playing;
+        this.currentPlayer = player;
+    }
 };
 
 var game = new CardGame();
@@ -55,6 +60,7 @@ app.use(function (req, res, next) {
 
 var getPlayerState = function (player) {
     return {
+        currentPlayer : game.currentPlayer,
         gameState : game.state,
         player : player };
 };
