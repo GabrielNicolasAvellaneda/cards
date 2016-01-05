@@ -9,8 +9,8 @@ var Card = function (value) {
 
 var app = angular.module('app', [])
 
-    .controller('CardHandController', function ($scope, $http, $timeout) {
-        $scope.hand = [1, 2, 1, 4].map(function (x) { return new Card(x); });
+    .controller('MainController', function ($scope, $http, $timeout) {
+        $scope.hand = [1, 2, 1, 4, 5, 6, 7, 8, 8, 9].map(function (x) { return new Card(x); });
         $scope.select = function (c) {
             c.selected = !c.selected;
         };
@@ -24,7 +24,9 @@ var app = angular.module('app', [])
         };
 
         var getState = function () {
-            $http.get('/status').then(function (result) { console.log(result.data);
+            $http.get('/status').then(function (result) {
+                console.log(result.data);
+                $scope.state = result.data;
                 $timeout(getState, 1000);
             });
         };
@@ -35,4 +37,12 @@ var app = angular.module('app', [])
             console.log("play");
         };
 
-    });
+    })
+        .filter('gamestate', function () {
+           return function (input) {
+            if (input == 'WaitingForPlayers') {
+                return "Waiting for Players";
+            }
+            return "NO_TEXT";
+           };
+        });

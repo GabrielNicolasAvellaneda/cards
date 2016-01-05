@@ -24,6 +24,14 @@ CardGame.prototype.getRandomName = function () {
     return "Player " + this.players.length;
 };
 
+CardGame.prototype.addPlayer = function (player) {
+    if (this.playerExists(player)) {
+        throw new Error("Player already exists.");
+    }
+
+    this.players.push(player);
+};
+
 var game = new CardGame();
 
 var isUndefined = function (x) {
@@ -38,7 +46,7 @@ app.use(function (req, res, next) {
     var player = req.session.player;
     if (isUndefined(player) || !game.playerExists(player)) {
         player = game.getRandomName();
-        game.players.push(player);
+        game.addPlayer(player);
         req.session.player = player;
         console.log("Player defined as " + player);
     }
@@ -46,7 +54,9 @@ app.use(function (req, res, next) {
 });
 
 var getPlayerState = function (player) {
-    return { player : player };
+    return {
+        gameState : game.state,
+        player : player };
 };
 
 app.get('/status', function (req, res) {
