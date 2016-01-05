@@ -6,6 +6,11 @@ body {
     height: 200px;
 }
 
+#board .card {
+    width: 100px;
+}
+
+
 #controls {
     text-align: center;
 }
@@ -21,6 +26,19 @@ body {
 
 #hand p {
     text-align: center;
+}
+
+#hand li.card img {
+   border: solid 5px #fff;
+}
+
+#hand li.card img.selected {
+    border: dashed 5px #ccc;
+}
+
+#hand .card-container {
+    float: left;
+    margin: 5px;
 }
 
 .message {

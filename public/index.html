@@ -37,10 +37,12 @@
               <div class="message alert alert-success"><h4>{{state | gamestateFormat}}</h4></div>
            </div>
         </div>
-        <div class="row">
+        <section id="board" class="row">
            <div class="col-lg-12">
                <ul>
-                   <li ng-repeat="c in onTable">{{c}}</li>
+                   <li ng-repeat="c in onTable">
+                       <img class="card" src="images/3_of_clubs.png" />
+                       </li>
                </ul>
            </div>
         </div>
@@ -49,7 +51,9 @@
     <section id="hand">
        <ul>
            <li ng-repeat="c in hand" class="card">
-                   <img ng-click="selectCard(c)" src="images/2_of_diamonds.png" />
+                <div class="card-container" >
+                    <img ng-click="selectCard(c)" src="images/2_of_diamonds.png" ng-class="{'selected' : c.selected}" />
+                </div>
         </ul>
     <div class="row">
         <p>
