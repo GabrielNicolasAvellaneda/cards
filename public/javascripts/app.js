@@ -13,7 +13,7 @@ var app = angular.module('app', [])
         $scope.hand = [1, 2, 1, 4, 5, 6, 7, 8, 8, 9].map(function (x) { return new Card(x); });
         $scope.selectCard = function (c) {
             c.selected = !c.selected;
-            $scope.selectedCardsCount = $scope.hand.filter(function (c) { return c.selected; }).length;
+            $scope.selectedCardsCount = getSelectedCards().length;
         };
 
         $scope.state = {};
@@ -38,8 +38,19 @@ var app = angular.module('app', [])
 
         getState();
 
+        var getSelectedCards = function () {
+            return $scope.hand.filter(function (c) { return c.selected; });
+        };
+
+        var removeSelectedCards = function () {
+            $scope.hand = $scope.hand.filter(function (c) { return !c.selected});
+        };
+
         $scope.play = function () {
             console.log("play");
+
+            var selectedCards = getSelectedCards();
+            removeSelectedCards();
         };
 
     })
