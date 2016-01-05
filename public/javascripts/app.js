@@ -24,9 +24,6 @@ var app = angular.module('app', [])
 
         $scope.canPlay = false;
 
-        $scope.pass = function () {
-            console.log("pass")
-        };
 
         var getState = function () {
             $http.get('/status').then(function (result) {
@@ -53,6 +50,13 @@ var app = angular.module('app', [])
             removeSelectedCards();
         };
 
+        $scope.pass = function () {
+            console.log("pass");
+
+            $http.get('/pass').then(function (result) {
+            });
+        };
+
     })
         .filter('gamestateFormat', function () {
            return function (input) {
@@ -60,7 +64,7 @@ var app = angular.module('app', [])
                 if (input.gameState == 'WaitingForPlayers') {
                     return "Waiting for Players";
                 } else if (input.gameState == 'Playing') {
-                    return (input.currentPlayer == input.player)? "It's your turn!" : "Please wait for your opponent";
+                    return (input.currentPlayer == input.player)? "It's your turn!" : "Please wait... It's opponent's turn.";
                 }
                 return input.gameState;
                };
