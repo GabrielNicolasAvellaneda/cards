@@ -1,6 +1,6 @@
 var express = require('express');
 var cookieParser = require('cookie-parser');
-//var session = require('express-session');
+var session = require('express-session');
 
 var app = express();
 
@@ -32,19 +32,27 @@ var isUndefined = function (x) {
 
 app.set('trust proxy', 1);
 app.use(cookieParser());
-
+app.use(session({resave: true, saveUninitialized: true, secret: 'SOMERANDOMSECRETHERE', cookie: { maxAge: 60000 }}));
 app.use(function (req, res, next) {
-    console.log(req.cookies);
     stats.requets = (stats.requests || 0) + 1;
-    var player = req.cookies.player;
+    var player = req.session.player;
     if (isUndefined(player) || !game.playerExists(player)) {
         player = game.getRandomName();
         game.players.push(player);
-        res.cookie('player', player, {maxAge: 900000, httpOnly: true});
+        req.session.player = player;
         console.log("Player defined as " + player);
     }
-
     next();
+});
+
+var getPlayerState = function (player) {
+    return { player : player };
+};
+
+app.get('/status', function (req, res) {
+    console.log('/status');
+    var state = getPlayerState(req.session.player);
+    res.json(state);
 });
 
 app.use(express.static(__dirname + '/public'));
