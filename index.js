@@ -6,6 +6,44 @@ var app = express();
 
 var stats = {};
 
+
+var Player = function (name, hand) {
+    this.name = name;
+    this.hand = hand || [];
+};
+
+Player.prototype.equals = function (other) {
+    return this.name == other.name;
+};
+
+Player.prototype.addCard = function (card) {
+    this.hand.push(card);
+};
+
+Player.prototype.removeCards = function (cards) {
+    var self = this;
+    cards.forEach(function (c) {
+        self.hand.removeCard(c);
+    });
+    return this.hand;
+};
+
+Player.prototype.indexOfCard = function (card) {
+    this.hand.forEach(function (x, i) {
+        if (x.equals(card))  {
+            return i;
+        }
+    });
+};
+
+Player.prototype.removeCard = function (card) {
+    var index = this.indexOf(card);
+    if (index != -1) {
+        this.hand.splice(index, 1);
+    }
+    return this.hand;
+};
+
 var CardGameStates = {
     WaitingForPlayers : "WaitingForPlayers",
     Playing : "Playing",
@@ -22,6 +60,10 @@ var CardSuites = {
 var Card = function (value, suite) {
     this.value = value;
     this.suite = suite;
+};
+
+Card.prototype.equals = function (other) {
+   return this.value = other.value && this.suite == other.suite;
 };
 
 var CardDeck = {};
@@ -44,8 +86,7 @@ CardDeck.shuffle = function (deck) {
     }
 
     var randomIndex = function () {
-        var random = Math.floor(Math.random() * indexes.length);
-        return random;
+        return Math.floor(Math.random() * indexes.length);
     };
 
     var shuffled = [];
@@ -54,38 +95,45 @@ CardDeck.shuffle = function (deck) {
         shuffled.push(deck[index]);
         indexes.splice(index, 1);
     }
-
     return shuffled;
 };
 
 var CardGame = function () {
     this.state = CardGameStates.WaitingForPlayers;
     this.players = [];
-    this.hands = [];
     this.deck = CardDeck.shuffle(CardDeck.create());
 };
 
-CardGame.prototype.playerExists = function (player) {
-    return this.players.indexOf(player) != -1;
+CardGame.prototype.playerExists = function (playerId) {
+    return this.getPlayer(playerId) != undefined;
 };
 
 CardGame.prototype.getRandomName = function () {
     return "Player " + this.players.length;
 };
 
-CardGame.prototype._distributeCards = function () {
-    this.hands[0] = [];
-    this.hands[1] = [];
-    var hands = this.hands;
-    var playerIndex = 0;
-    this.deck.forEach(function (c) {
-        hands[playerIndex].push(c);
-        if (playerIndex == 0) {
-            playerIndex = 1;
-        } else {
-            playerIndex = 0;
+CardGame.prototype._nextPlayerGen = function (start) {
+    var index = start || -1;
+    var self = this;
+    return function () {
+        index++;
+        if (index >= self.players.length) {
+            index = 0;
         }
+        return self.players[index];
+    };
+};
+
+CardGame.prototype._distributeCards = function () {
+    var nextPlayer = this._nextPlayerGen();
+    this.deck.forEach(function (c) {
+        var player = nextPlayer();
+        player.addCard(c);
     });
+};
+
+CardGame.prototype.getPlayer = function (playerId) {
+    return this.players.find(function (p) { return p.name == playerId});
 };
 
 CardGame.prototype.addPlayer = function (player) {
@@ -96,15 +144,20 @@ CardGame.prototype.addPlayer = function (player) {
     this.players.push(player);
     if (this.players.length >= 2) {
         this.state = CardGameStates.Playing;
+        console.log('setting current player');
         this.currentPlayer = player;
         this._distributeCards();
     }
 };
 
 CardGame.prototype._checkPlayer = function (player) {
-    if (!this.playerExists(player)) {
+    if (!this.playerExists(player.name)) {
         throw new Error("Player does not exists!");
     }
+};
+
+CardGame.prototype.isTurnOf = function (player) {
+    return this.currentPlayer && this.currentPlayer.equals(player);
 };
 
 CardGame.prototype._checkCanPass = function (player) {
@@ -112,7 +165,7 @@ CardGame.prototype._checkCanPass = function (player) {
        throw new Error("Game is not in playing state.");
    }
 
-    if (this.currentPlayer != player) {
+    if (!this.isTurnOf(player)) {
        throw new Error("It's not your turn.");
    }
 };
@@ -126,7 +179,7 @@ CardGame.prototype.getPlayer2 = function () {
 };
 
 CardGame.prototype._nextTurn = function () {
-    if (this.currentPlayer == this.getPlayer1()) {
+    if (this.currentPlayer.equals(this.getPlayer1())) {
         this.currentPlayer = this.getPlayer2();
     } else {
         this.currentPlayer = this.getPlayer1();
@@ -146,8 +199,8 @@ var isUndefined = function (x) {
     return x == undefined;
 };
 
-var getPlayerFromSession = function (session) {
-    return session.player;
+var getPlayerIdFromSession = function (session) {
+    return session.playerId;
 };
 
 app.set('trust proxy', 1);
@@ -155,34 +208,35 @@ app.use(cookieParser());
 app.use(session({resave: true, saveUninitialized: true, secret: 'SOMERANDOMSECRETHERE', cookie: { maxAge: 600000 }}));
 app.use(function (req, res, next) {
     stats.requets = (stats.requests || 0) + 1;
-    var player = getPlayerFromSession(req.session);
-    if (isUndefined(player) || !game.playerExists(player)) {
-        player = game.getRandomName();
-        game.addPlayer(player);
-        req.session.player = player;
-        console.log("Player defined as " + player);
+    var playerId = getPlayerIdFromSession(req.session);
+    if (isUndefined(playerId) || !game.playerExists(playerId)) {
+        playerId = game.getRandomName();
+        game.addPlayer(new Player(playerId));
+        req.session.playerId = playerId;
+        console.log("Player defined as " + playerId);
     }
     next();
 });
 
-var getPlayerState = function (player) {
+var getPlayerState = function (playerId) {
     return {
         cardsOnTable : [],
-        hand : game.hands[0],
-        currentPlayer : game.currentPlayer,
+        hand : game.getPlayer(playerId).hand,
+        currentPlayer : (game.currentPlayer && game.currentPlayer.name) || null,
         gameState : game.state,
-        player : player };
+        playerId : playerId };
 };
 
 app.get('/status', function (req, res) {
     console.log('/status');
-    var state = getPlayerState(req.session.player);
+    var state = getPlayerState(req.session.playerId);
     res.json(state);
 });
 
 app.get('/pass', function (req, res) {
     console.log('/pass');
-    var player = getPlayerFromSession(req.session);
+    var playerId = getPlayerIdFromSession(req.session);
+    var player = game.getPlayer(playerId);
     game.pass(player);
     res.end();
 });

@@ -67,7 +67,7 @@ var app = angular.module('app', [])
                 if (input.gameState == 'WaitingForPlayers') {
                     return "Waiting for Players";
                 } else if (input.gameState == 'Playing') {
-                    return (input.currentPlayer == input.player)? "It's your turn!" : "Please wait... It's opponent's turn.";
+                    return (input.currentPlayer == input.playerId)? "It's your turn!" : "Please wait... It's opponent's turn.";
                 }
                 return input.gameState;
                };
