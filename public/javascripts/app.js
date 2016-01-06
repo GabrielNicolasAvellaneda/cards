@@ -2,16 +2,16 @@
  * Created by developer on 04/01/2016.
  */
 
-var Card = function (value, suite) {
+var Card = function (value, suite, selected) {
     this.value = value;
     this.suite = suite;
-    this.selected = false;
+    this.selected = selected || false;
 };
 
 var app = angular.module('app', [])
 
     .controller('MainController', function ($scope, $http, $timeout) {
-        $scope.hand = [1, 2, 1, 4, 5, 6, 7, 8, 8, 9].map(function (x) { return new Card(x); });
+        $scope.hand = [];
         $scope.selectCard = function (c) {
             c.selected = !c.selected;
             $scope.selectedCardsCount = getSelectedCards().length;
@@ -21,15 +21,17 @@ var app = angular.module('app', [])
 
         $scope.selectedCardsCount = 0;
 
-        $scope.onTable = [1, 2].map(function (x) { return new Card(x); });
+        $scope.onTable = [];
 
         $scope.canPlay = false;
-
 
         var getState = function () {
             $http.get('/status').then(function (result) {
                 console.log(result.data);
                 $scope.state = result.data;
+                if ($scope.hand.length == 0 && result.data.hand) {
+                    $scope.hand = result.data.hand.map(function (c) { return new Card(c.value, c.suite)});
+                }
                 $timeout(getState, 1000);
             });
         };

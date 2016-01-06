@@ -29,10 +29,11 @@ CardDeck.create = function () {
     var deck = [];
     var suites = [CardSuites.Hearts, CardSuites.Spades, CardSuites.Diamonds, CardSuites.Clubs];
     suites.forEach(function (suite) {
-        for (var value = 1; value < 13; value++) {
-            deck.push(new Card(value, suite))
+        for (var value = 1; value <= 13; value++) {
+            deck.push(new Card(value, suite));
         }
     });
+    return deck;
 };
 
 CardDeck.shuffle = function (deck) {
@@ -43,7 +44,8 @@ CardDeck.shuffle = function (deck) {
     }
 
     var randomIndex = function () {
-        Math.ceil(Math.random() * indexes.length);
+        var random = Math.floor(Math.random() * indexes.length);
+        return random;
     };
 
     var shuffled = [];
@@ -59,6 +61,7 @@ CardDeck.shuffle = function (deck) {
 var CardGame = function () {
     this.state = CardGameStates.WaitingForPlayers;
     this.players = [];
+    this.hands = [];
     this.deck = CardDeck.shuffle(CardDeck.create());
 };
 
@@ -70,6 +73,21 @@ CardGame.prototype.getRandomName = function () {
     return "Player " + this.players.length;
 };
 
+CardGame.prototype._distributeCards = function () {
+    this.hands[0] = [];
+    this.hands[1] = [];
+    var hands = this.hands;
+    var playerIndex = 0;
+    this.deck.forEach(function (c) {
+        hands[playerIndex].push(c);
+        if (playerIndex == 0) {
+            playerIndex = 1;
+        } else {
+            playerIndex = 0;
+        }
+    });
+};
+
 CardGame.prototype.addPlayer = function (player) {
     if (this.playerExists(player)) {
         throw new Error("Player already exists.");
@@ -79,6 +97,7 @@ CardGame.prototype.addPlayer = function (player) {
     if (this.players.length >= 2) {
         this.state = CardGameStates.Playing;
         this.currentPlayer = player;
+        this._distributeCards();
     }
 };
 
@@ -148,6 +167,8 @@ app.use(function (req, res, next) {
 
 var getPlayerState = function (player) {
     return {
+        cardsOnTable : [],
+        hand : game.hands[0],
         currentPlayer : game.currentPlayer,
         gameState : game.state,
         player : player };
