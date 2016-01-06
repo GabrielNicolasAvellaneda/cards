@@ -12,9 +12,54 @@ var CardGameStates = {
     GameOver : "GameOver"
 };
 
+var CardSuites = {
+    Hearts : "Hearts",
+    Spades : "Spades",
+    Diamonds : "Diamonds",
+    Clubs : "Clubs"
+};
+
+var Card = function (value, suite) {
+    this.value = value;
+    this.suite = suite;
+};
+
+var CardDeck = {};
+CardDeck.create = function () {
+    var deck = [];
+    var suites = [CardSuites.Hearts, CardSuites.Spades, CardSuites.Diamonds, CardSuites.Clubs];
+    suites.forEach(function (suite) {
+        for (var value = 1; value < 13; value++) {
+            deck.push(new Card(value, suite))
+        }
+    });
+};
+
+CardDeck.shuffle = function (deck) {
+    // TODO: Refactor this into a generator like function.
+    var indexes = [];
+    for (var i = 0; i < deck.length; i++) {
+        indexes.push(i);
+    }
+
+    var randomIndex = function () {
+        Math.ceil(Math.random() * indexes.length);
+    };
+
+    var shuffled = [];
+    while (indexes.length > 0) {
+        var index = randomIndex();
+        shuffled.push(deck[index]);
+        indexes.splice(index, 1);
+    }
+
+    return shuffled;
+};
+
 var CardGame = function () {
     this.state = CardGameStates.WaitingForPlayers;
     this.players = [];
+    this.deck = CardDeck.shuffle(CardDeck.create());
 };
 
 CardGame.prototype.playerExists = function (player) {

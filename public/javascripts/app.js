@@ -2,8 +2,9 @@
  * Created by developer on 04/01/2016.
  */
 
-var Card = function (value) {
+var Card = function (value, suite) {
     this.value = value;
+    this.suite = suite;
     this.selected = false;
 };
 
@@ -76,6 +77,31 @@ var app = angular.module('app', [])
                 }
                 return "Selected " + n + " card" + ((n > 0)? "s" : "");
             };
+    })
+        .filter('cardImage', function () {
+            return function (card) {
+                var value = card.value;
+                if (value == "1") {
+                    value = "ace";
+                } else if (value == 11) {
+                    value = "jack";
+                } else if (value == 12) {
+                    value = "queen";
+                } else if (value == 13) {
+                    value = "king";
+                }
+
+                var suite = card.suite;
+                if (suite == "Hearts") {
+                    suite = "hearts";
+                } else if (suite == "Spades") {
+                    suite = "spades";
+                } else if (suite == "Diamonds") {
+                    suite = "diamonds";
+                }
+
+                return value + "_of_" + suite + ".png";
+            }
     });
 
 
