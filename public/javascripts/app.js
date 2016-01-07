@@ -8,6 +8,10 @@ var Card = function (value, suite, selected) {
     this.selected = selected || false;
 };
 
+Card.prototype.serialize = function () {
+    return { value: this.value, suite: this.suite };
+};
+
 var app = angular.module('app', [])
 
     .controller('MainController', function ($scope, $http, $timeout) {
@@ -48,15 +52,22 @@ var app = angular.module('app', [])
 
         $scope.play = function () {
             console.log("play");
-
-            var selectedCards = getSelectedCards();
+            var selectedCards = getSelectedCards().map(function (card) { return card.serialize(); });
             removeSelectedCards();
+            $http.post('/play', selectedCards).then(function (result) {
+
+            }, function (error) {
+                alert(error.data);
+                console.log(error);
+            });
         };
 
         $scope.pass = function () {
             console.log("pass");
-
             $http.get('/pass').then(function (result) {
+            }, function (error) {
+                alert(error.data);
+                console.log(error);
             });
         };
 

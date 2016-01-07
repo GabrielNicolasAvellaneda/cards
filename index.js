@@ -1,15 +1,49 @@
 var express = require('express');
 var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
 var session = require('express-session');
 
 var app = express();
 
 var stats = {};
 
-
 var Player = function (name, hand) {
     this.name = name;
     this.hand = hand || [];
+};
+
+var PlayerPlay = function (player, cards) {
+    this.player = player;
+    this.cards = cards;
+};
+
+PlayerPlay.prototype.isGreateThan = function (other) {
+    var first = this.cards[0];
+    return (first.isGreaterThan(other));
+};
+
+var Table = function () {
+    this.cardsOnTable = [];
+};
+
+Table.prototype.clear = function () {
+    this.cardsOnTable = [];
+};
+
+Table.prototype.validatePlay = function (play) {
+    var lastPlay = this.cardsOnTable[this.cardsOnTable.length-1];
+    return lastPlay.length == play.cards.length && play.isGreaterThan(lastPlay);
+};
+
+Table.prototype.canPlayCards = function (cards) {
+   return this.cardsOnTable.length == 0 || this.validatePlay(cards);
+};
+
+Table.prototype.addPlay = function (play) {
+    if (!this.canPlayCards(play.cards)) {
+        throw new Error("This play is not allowed.");
+    }
+    this.cardsOnTable.push(play);
 };
 
 Player.prototype.equals = function (other) {
@@ -23,7 +57,7 @@ Player.prototype.addCard = function (card) {
 Player.prototype.removeCards = function (cards) {
     var self = this;
     cards.forEach(function (c) {
-        self.hand.removeCard(c);
+        self.removeCard(c);
     });
     return this.hand;
 };
@@ -37,7 +71,7 @@ Player.prototype.indexOfCard = function (card) {
 };
 
 Player.prototype.removeCard = function (card) {
-    var index = this.indexOf(card);
+    var index = this.indexOfCard(card);
     if (index != -1) {
         this.hand.splice(index, 1);
     }
@@ -64,6 +98,10 @@ var Card = function (value, suite) {
 
 Card.prototype.equals = function (other) {
    return this.value = other.value && this.suite == other.suite;
+};
+
+Card.prototype.isGreaterThan = function (other) {
+    return this.value > other.value;
 };
 
 var CardDeck = {};
@@ -102,6 +140,7 @@ var CardGame = function () {
     this.state = CardGameStates.WaitingForPlayers;
     this.players = [];
     this.deck = CardDeck.shuffle(CardDeck.create());
+    this.table = new Table();
 };
 
 CardGame.prototype.playerExists = function (playerId) {
@@ -144,7 +183,6 @@ CardGame.prototype.addPlayer = function (player) {
     this.players.push(player);
     if (this.players.length >= 2) {
         this.state = CardGameStates.Playing;
-        console.log('setting current player');
         this.currentPlayer = player;
         this._distributeCards();
     }
@@ -160,7 +198,7 @@ CardGame.prototype.isTurnOf = function (player) {
     return this.currentPlayer && this.currentPlayer.equals(player);
 };
 
-CardGame.prototype._checkCanPass = function (player) {
+CardGame.prototype._checkPlayerTurnAndGameState = function (player) {
    if (this.state != CardGameStates.Playing)  {
        throw new Error("Game is not in playing state.");
    }
@@ -168,6 +206,15 @@ CardGame.prototype._checkCanPass = function (player) {
     if (!this.isTurnOf(player)) {
        throw new Error("It's not your turn.");
    }
+};
+
+CardGame.prototype._checkCanPass = function (player) {
+    this._checkPlayerTurnAndGameState(player);
+};
+
+CardGame.prototype._checkCanPlay = function (player, cards) {
+    this._checkPlayerTurnAndGameState(player);
+
 };
 
 CardGame.prototype.getPlayer1 = function () {
@@ -179,6 +226,7 @@ CardGame.prototype.getPlayer2 = function () {
 };
 
 CardGame.prototype._nextTurn = function () {
+    this.table.clear();
     if (this.currentPlayer.equals(this.getPlayer1())) {
         this.currentPlayer = this.getPlayer2();
     } else {
@@ -193,6 +241,21 @@ CardGame.prototype.pass = function (player) {
     this._nextTurn();
 };
 
+CardGame.prototype._checkGameOver = function () {
+    if (this.currentPlayer.cards.length == 0) {
+        this.state = CardGameStates.GameOver;
+    }
+};
+
+CardGame.prototype.play = function (player, cards) {
+    this._checkPlayer(player);
+    this._checkCanPlay(player, cards);
+
+    player.removeCards(cards);
+    this.table.addPlay(new PlayerPlay(player, cards));
+    this._checkGameOver();
+};
+
 var game = new CardGame();
 
 var isUndefined = function (x) {
@@ -204,6 +267,7 @@ var getPlayerIdFromSession = function (session) {
 };
 
 app.set('trust proxy', 1);
+app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(session({resave: true, saveUninitialized: true, secret: 'SOMERANDOMSECRETHERE', cookie: { maxAge: 600000 }}));
 app.use(function (req, res, next) {
@@ -220,7 +284,7 @@ app.use(function (req, res, next) {
 
 var getPlayerState = function (playerId) {
     return {
-        cardsOnTable : [],
+        cardsOnTable : game.table.cardsOnTable,
         hand : game.getPlayer(playerId).hand,
         currentPlayer : (game.currentPlayer && game.currentPlayer.name) || null,
         gameState : game.state,
@@ -233,12 +297,29 @@ app.get('/status', function (req, res) {
     res.json(state);
 });
 
+app.post('/play', function (req, res) {
+    console.log('/play');
+    var cards = req.body;
+    var playerId = getPlayerIdFromSession(req.session);
+    var player = game.getPlayer(playerId);
+    try {
+        game.play(player, cards);
+        res.send("success");
+    } catch (exception) {
+        res.send(400, exception.message);
+    }
+});
+
 app.get('/pass', function (req, res) {
     console.log('/pass');
     var playerId = getPlayerIdFromSession(req.session);
     var player = game.getPlayer(playerId);
-    game.pass(player);
-    res.end();
+    try {
+        game.pass(player);
+        res.send("success");
+    } catch (exception) {
+       res.send(400, exception.message);
+    }
 });
 
 app.use(express.static(__dirname + '/public'));
